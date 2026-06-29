@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Dhanshri Properties management",
+  "description": "A comprehensive mobile-first web application to streamline the management of multiple real estate projects. It enables users and administrators to manage projects, view plot availability, track property insights, and utilize financial and mapping tools for better decision-making.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
