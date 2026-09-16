@@ -6,6 +6,7 @@ import Icon from './common/Icon';
 interface BottomNavProps {
   currentView: View;
   setCurrentView: (view: View) => void;
+  isAdmin?: boolean;
 }
 
 const NavItem: React.FC<{
@@ -29,7 +30,7 @@ const NavItem: React.FC<{
   );
 };
 
-const BottomNav: React.FC<BottomNavProps> = ({ currentView, setCurrentView }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ currentView, setCurrentView, isAdmin }) => {
   const navItems = [
     { view: View.DASHBOARD, label: 'Home', icon: 'home' },
     { view: View.PROJECTS, label: 'Search', icon: 'search' },
@@ -37,6 +38,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setCurrentView }) =>
     { view: View.CONTACT, label: 'Chat', icon: 'chat' },
     { view: View.PROFILE, label: 'Profile', icon: 'profile' },
   ];
+
+  if (isAdmin) {
+    navItems.splice(4, 0, { view: View.ADMIN_PANEL, label: 'Admin', icon: 'lock' });
+  }
   
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-40 md:hidden">

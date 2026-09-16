@@ -11,13 +11,11 @@ interface MapViewProps {
 // In a real scenario, you'd calculate these based on actual map bounds.
 const pinPositions: { [key: number]: { top: string, left: string } } = {
   1: { top: '75%', left: '45%' },  // Vrindavan (Rau)
-  2: { top: '20%', left: '55%' },  // Keshvam (Ujjain Rd)
   3: { top: '80%', left: '50%' },  // Divine (Pigdambar)
   4: { top: '78%', left: '40%' },  // Maa Ginni Ext (Rau)
   5: { top: '72%', left: '50%' },  // Maa Ginni (Rau)
   6: { top: '70%', left: '42%' },  // GreenWood (Rau)
   7: { top: '82%', left: '45%' },  // Red Wood (Pigdambar)
-  8: { top: '75%', left: '20%' },  // Shivaji (Pithampur)
 };
 
 

@@ -1,0 +1,190 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User registration and profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Auth UID of the user" },
+        "email": { "type": "string", "description": "Email of the registered user" },
+        "name": { "type": "string", "description": "Name of the user" },
+        "fullName": { "type": "string", "description": "Full name of the user" },
+        "mobile": { "type": "string", "description": "Optional mobile number" },
+        "profileImage": { "type": "string", "description": "Base64 data URL for profile photo" },
+        "role": { "type": "string", "description": "Role of the user", "enum": ["admin", "executive", "user"] },
+        "status": { "type": "string", "description": "Approval status of the user", "enum": ["Pending Approval", "Approved", "Rejected"] },
+        "createdAt": { "type": "string", "description": "ISO timestamp of user creation" },
+        "lastLogin": { "type": "string", "description": "ISO timestamp of last login" },
+        "rejectionReason": { "type": "string", "description": "Optional administrator rejection reason" },
+        "savedProjectIds": { "type": "array", "description": "List of bookmarked projects" }
+      },
+      "required": ["email", "role", "status"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Real estate township developments including coordinate metadata and full plot list",
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "Unique project identifier" },
+        "name": { "type": "string", "description": "Development name" },
+        "location": { "type": "string", "description": "Location description" },
+        "description": { "type": "string", "description": "Rich description text" },
+        "imageUrls": { "type": "array", "description": "List of photography or rendering URLs" },
+        "totalPlots": { "type": "integer", "description": "Total number of plots designed" },
+        "availablePlots": { "type": "integer", "description": "Number of available plots" },
+        "coords": { "type": "object", "description": "Latitude and longitude map positioning coordinates" },
+        "layout": { "type": "array", "description": "Full array list of nested plot details" },
+        "amenities": { "type": "array", "description": "List of amenities available in the township" },
+        "documents": {
+          "type": "array",
+          "description": "List of PDF brochures and legal documents for the project",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "type": { "type": "string", "enum": ["brochure", "legal"] },
+              "size": { "type": "string" },
+              "uploadedAt": { "type": "string" },
+              "uploadedBy": { "type": "string" },
+              "url": { "type": "string" }
+            },
+            "required": ["id", "name", "type", "size", "uploadedAt", "uploadedBy", "url"]
+          }
+        },
+        "coverImage": { "type": "string", "description": "High-resolution project cover image (Base64 or URL)" },
+        "galleryImages": {
+          "type": "array",
+          "description": "List of all project images for the media gallery",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["id", "name", "location", "description", "imageUrls", "totalPlots", "availablePlots", "coords", "layout", "amenities"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Plot purchase token bookings and transaction records",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string", "description": "Unique alphanumeric reference code" },
+        "projectId": { "type": "integer", "description": "Referenced project ID" },
+        "projectName": { "type": "string", "description": "Township project name" },
+        "plotId": { "type": "integer", "description": "Referenced plot layout ID" },
+        "plotNumber": { "type": "string", "description": "Plot location number" },
+        "plotSize": { "type": "integer", "description": "Plot size in square feet" },
+        "facing": { "type": "string", "description": "Plot facing direction orientation" },
+        "totalAmount": { "type": "integer", "description": "Total plot price in Indian Rupees" },
+        "bookingAmount": { "type": "integer", "description": "Paid token advance amount" },
+        "bookingDate": { "type": "string", "description": "Date of transaction" },
+        "paymentMode": { "type": "string", "description": "Mode of financial transaction" },
+        "transactionId": { "type": "string", "description": "Alphanumeric tracking reference ID" },
+        "salesExecutive": { "type": "string", "description": "Executive who closed the sale" },
+        "bookingSource": { "type": "string", "description": "Lead sourcing category" },
+        "customer": { "type": "object", "description": "Purchaser's contact and KYC details" },
+        "status": { "type": "string", "description": "Booking status verification" },
+        "timeline": { "type": "array", "description": "List of procedural timeline milestones" }
+      },
+      "required": [
+        "bookingId",
+        "projectId",
+        "projectName",
+        "plotId",
+        "plotNumber",
+        "plotSize",
+        "facing",
+        "totalAmount",
+        "bookingAmount",
+        "bookingDate",
+        "paymentMode",
+        "transactionId",
+        "salesExecutive",
+        "bookingSource",
+        "customer",
+        "status",
+        "timeline"
+      ]
+    },
+    "HoldRequest": {
+      "title": "HoldRequest",
+      "description": "Request made by sales executives to lock a specific plot under pending approval",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the request" },
+        "projectId": { "type": "integer", "description": "Referenced project ID" },
+        "projectName": { "type": "string", "description": "Name of the township development" },
+        "plotId": { "type": "integer", "description": "ID of the specific plot" },
+        "plotNumber": { "type": "string", "description": "Display layout number of the plot" },
+        "customerName": { "type": "string", "description": "Name of the customer asking for hold" },
+        "salesExecutiveName": { "type": "string", "description": "Name of the requesting executive" },
+        "salesExecutiveEmail": { "type": "string", "description": "Email of the requesting executive" },
+        "salesExecutiveUid": { "type": "string", "description": "Auth UID of the requesting executive" },
+        "reason": { "type": "string", "description": "Justification for holding the plot" },
+        "duration": { "type": "string", "description": "Duration requested for hold" },
+        "status": { "type": "string", "description": "Status of approval request", "enum": ["Pending Approval", "Approved", "Rejected"] },
+        "rejectionReason": { "type": "string", "description": "Optional text if hold request was rejected" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of hold request creation" }
+      },
+      "required": ["id", "projectId", "projectName", "plotId", "plotNumber", "customerName", "salesExecutiveName", "salesExecutiveEmail", "salesExecutiveUid", "reason", "duration", "status", "createdAt"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Property insight and blog posts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the blog post" },
+        "title": { "type": "string", "description": "Title of the blog post" },
+        "coverImage": { "type": "string", "description": "Optional cover image base64 or URL" },
+        "description": { "type": "string", "description": "Short summary description of the blog" },
+        "content": { "type": "string", "description": "Full content of the blog post" },
+        "category": { "type": "string", "description": "Category of the blog post" },
+        "tags": { "type": "array", "description": "List of tags associated with the post", "items": { "type": "string" } },
+        "author": { "type": "string", "description": "Name or handle of the author" },
+        "authorEmail": { "type": "string", "description": "Email of the author" },
+        "status": { "type": "string", "description": "Draft or Published", "enum": ["Draft", "Published"] },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["id", "title", "description", "content", "category", "author", "status", "createdAt"]
+    },
+    "PlotMapping": {
+      "title": "PlotMapping",
+      "description": "Coordinate mappings for plots mapped over an official layout image background",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "integer", "description": "ID of the real estate project" },
+        "plotNumber": { "type": "string", "description": "Target plot identifier" },
+        "layoutX": { "type": "number", "description": "X coordinate percentage" },
+        "layoutY": { "type": "number", "description": "Y coordinate percentage" },
+        "layoutW": { "type": "number", "description": "Width percentage" },
+        "layoutH": { "type": "number", "description": "Height percentage" }
+      },
+      "required": ["projectId", "plotNumber", "layoutX", "layoutY", "layoutW", "layoutH"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores core registered user metadata"
+    },
+    "projects/{projectId}": {
+      "schema": "Project",
+      "description": "Master list of real estate projects and their real-time plot layouts"
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Token bookings registered by buyers"
+    },
+    "hold_requests/{requestId}": {
+      "schema": "HoldRequest",
+      "description": "Hold requests submitted for individual plots"
+    },
+    "blogs/{blogId}": {
+      "schema": "BlogPost",
+      "description": "Property insight and blog posts collection"
+    },
+    "plot_mappings/{mappingId}": {
+      "schema": "PlotMapping",
+      "description": "Plot coordinate mappings on official layouts"
+    }
+  }
+}

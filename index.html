@@ -4,6 +4,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Suppress benign development environment HMR/WebSocket and network transport errors
+    window.addEventListener('unhandledrejection', function(event) {
+      var reason = event.reason;
+      if (reason) {
+        var msg = typeof reason === 'string' ? reason : (reason.message || reason.description || '');
+        if (
+          msg.indexOf('WebSocket') !== -1 || 
+          msg.indexOf('websocket') !== -1 || 
+          msg.indexOf('ws://') !== -1 || 
+          msg.indexOf('HMR') !== -1 ||
+          msg.indexOf('WebChannelConnection') !== -1 ||
+          msg.indexOf('Listen') !== -1
+        ) {
+          console.warn('Suppressed benign environment rejection:', reason);
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }, true);
+
+    window.addEventListener('error', function(event) {
+      var msg = event.message || '';
+      if (
+        msg.indexOf('WebSocket') !== -1 || 
+        msg.indexOf('websocket') !== -1 || 
+        msg.indexOf('ws://') !== -1 ||
+        msg.indexOf('WebChannelConnection') !== -1 ||
+        msg.indexOf('Listen') !== -1
+      ) {
+        console.warn('Suppressed benign environment error:', msg);
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, true);
+  </script>
   <title>Dhanshri Properties</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>

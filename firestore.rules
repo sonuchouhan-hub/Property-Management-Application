@@ -1,0 +1,293 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE SECURITY PRIMITIVES ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isSuperAdminEmailString(emailStr) {
+      return emailStr == 'aiconsultdhanshri@gmail.com' ||
+             emailStr == 'pnkalra20@gmail.com' ||
+             emailStr == 'sc.dhanshri@gmail.com' ||
+             emailStr == 'sonuchouhan1528@gmail.com' ||
+             emailStr == 'sonuchouhan@gmail.com';
+    }
+
+    function isSpecificAdmin() {
+      return isSignedIn() && isSuperAdminEmailString(request.auth.token.get('email', '').lower());
+    }
+
+    function isManagerOrAdmin() {
+      return isAdmin();
+    }
+
+    function isAdmin() {
+      return isSpecificAdmin() ||
+             (isSignedIn() &&
+              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'admin' &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', 'none') == 'Approved');
+    }
+
+    // Check if user has an approved profile in Firestore with an authorized role
+    function isApprovedUser() {
+      return isSignedIn() && (
+             isAdmin() ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('status', 'none') == 'Approved')
+      );
+    }
+
+    function isApprovedOrAdmin() {
+      return isApprovedUser() || isAdmin();
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function getRole(data) {
+      return ('role' in data && data.role != null) ? data.role : 'none';
+    }
+
+    function getStatus(data) {
+      return ('status' in data && data.status != null) ? data.status : 'none';
+    }
+
+    // --- VALIDATION BLUEPRINTS ---
+
+    // User profile validation supporting complete executive/admin/user profiles
+    function isValidUserProfile(data) {
+      return 'email' in data && data.email != null &&
+             data.email is string && data.email.size() <= 150 &&
+             (!('uid' in data) || data.uid == null || (data.uid is string && data.uid.size() <= 128)) &&
+             (!('name' in data) || data.name == null || (data.name is string && data.name.size() <= 150)) &&
+             (!('fullName' in data) || data.fullName == null || (data.fullName is string && data.fullName.size() <= 150)) &&
+             (!('mobile' in data) || data.mobile == null || (data.mobile is string && data.mobile.size() <= 100)) &&
+             (!('profileImage' in data) || data.profileImage == null || (data.profileImage is string && data.profileImage.size() <= 1500000)) &&
+             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 2000)) &&
+             (!('approved' in data) || data.approved == null || data.approved is bool) &&
+             (!('role' in data) || data.role == null || (data.role is string && (data.role == 'admin' || data.role == 'manager' || data.role == 'sales' || data.role == 'viewer' || data.role == 'executive' || data.role == 'user' || data.role == 'none'))) &&
+             (!('status' in data) || data.status == null || (data.status is string && (data.status == 'Pending Approval' || data.status == 'Approved' || data.status == 'Rejected' || data.status == 'none'))) &&
+             (!('createdAt' in data) || data.createdAt == null || (data.createdAt is string && data.createdAt.size() <= 100)) &&
+             (!('lastLogin' in data) || data.lastLogin == null || (data.lastLogin is string && data.lastLogin.size() <= 100)) &&
+             (!('lastSeen' in data) || data.lastSeen == null || (data.lastSeen is string && data.lastSeen.size() <= 100)) &&
+             (!('rejectionReason' in data) || data.rejectionReason == null || (data.rejectionReason is string && data.rejectionReason.size() <= 1000)) &&
+             (!('savedProjectIds' in data) || data.savedProjectIds == null || (data.savedProjectIds is list && data.savedProjectIds.size() <= 200));
+    }
+
+    // Township Project validation
+    function isValidProject(data) {
+      return 'id' in data && 'name' in data && 'location' in data && 'description' in data && 'totalPlots' in data && 'availablePlots' in data &&
+             (data.id is int || data.id is float) &&
+             data.name is string && data.name.size() <= 250 &&
+             data.location is string && data.location.size() <= 250 &&
+             data.description is string && data.description.size() <= 5000 &&
+             (data.totalPlots is int || data.totalPlots is float) && data.totalPlots >= 0 &&
+             (data.availablePlots is int || data.availablePlots is float) && data.availablePlots >= 0 &&
+             (!('imageUrls' in data) || data.imageUrls is list) &&
+             (!('coords' in data) || data.coords is map) &&
+             (!('layout' in data) || data.layout is list) &&
+             (!('plots' in data) || data.plots is list) &&
+             (!('amenities' in data) || data.amenities is list) &&
+             (!('documents' in data) || data.documents is list) &&
+             (!('projectCode' in data) || data.projectCode is string) &&
+             (!('status' in data) || data.status is string) &&
+             (!('propertyType' in data) || data.propertyType is string) &&
+             (!('category' in data) || data.category is string) &&
+             (!('approval' in data) || data.approval is string) &&
+             (!('specialFeature' in data) || data.specialFeature is string) &&
+             (!('plotSizes' in data) || data.plotSizes is string) &&
+             (!('plotDimensions' in data) || data.plotDimensions is string) &&
+             (!('residentialRate' in data) || data.residentialRate is string) &&
+             (!('commercialRate' in data) || data.commercialRate is string) &&
+             (!('paymentOptions' in data) || data.paymentOptions is string) &&
+             (!('createdAt' in data) || data.createdAt is string) &&
+             (!('updatedAt' in data) || data.updatedAt is string) &&
+             (!('isActive' in data) || data.isActive is bool) &&
+             (!('featuredProject' in data) || data.featuredProject is bool) &&
+             (!('coverImage' in data) || data.coverImage is string) &&
+             (!('galleryImages' in data) || data.galleryImages is list) &&
+             (!('displayOrder' in data) || data.displayOrder is int || data.displayOrder is float);
+    }
+
+    // Booking validation with safe handling of optional customer demographic attributes
+    function isValidBooking(data) {
+      return 'bookingId' in data && 'projectId' in data && 'projectName' in data && 'plotId' in data && 'plotNumber' in data && 'plotSize' in data && 'facing' in data && 'totalAmount' in data && 'bookingAmount' in data && 'bookingDate' in data && 'paymentMode' in data && 'transactionId' in data && 'salesExecutive' in data && 'bookingSource' in data && 'customer' in data && 'status' in data && 'timeline' in data &&
+             data.bookingId is string && data.bookingId.size() <= 100 &&
+             (data.projectId is int || data.projectId is float) &&
+             data.projectName is string && data.projectName.size() <= 200 &&
+             (data.plotId is int || data.plotId is float) &&
+             data.plotNumber is string && data.plotNumber.size() <= 50 &&
+             (data.plotSize is int || data.plotSize is float) &&
+             data.facing is string &&
+             (data.totalAmount is int || data.totalAmount is float) &&
+             (data.bookingAmount is int || data.bookingAmount is float) &&
+             data.bookingDate is string &&
+             data.paymentMode is string &&
+             data.transactionId is string && data.transactionId.size() <= 150 &&
+             data.status is string && (data.status == 'Confirmed' || data.status == 'Pending' || data.status == 'Cancelled') &&
+             data.customer is map &&
+             'fullName' in data.customer && data.customer.fullName is string && data.customer.fullName.size() <= 150 &&
+             'email' in data.customer && data.customer.email is string && data.customer.email.size() <= 150 &&
+             'mobile' in data.customer && data.customer.mobile is string && data.customer.mobile.size() <= 30 &&
+             (!('address' in data.customer) || (data.customer.address is string && data.customer.address.size() <= 1000)) &&
+             (!('aadhaarNumber' in data.customer) || (data.customer.aadhaarNumber is string && data.customer.aadhaarNumber.size() <= 30)) &&
+             (!('panNumber' in data.customer) || (data.customer.panNumber is string && data.customer.panNumber.size() <= 30)) &&
+             data.timeline is list && data.timeline.size() <= 50;
+    }
+
+    // HoldRequest validation predicate
+    function isValidHoldRequest(data) {
+      return 'id' in data && 'projectId' in data && 'projectName' in data && 'plotId' in data && 'plotNumber' in data && 'customerName' in data && 'salesExecutiveName' in data && 'salesExecutiveEmail' in data && 'salesExecutiveUid' in data && 'reason' in data && 'duration' in data && 'status' in data && 'createdAt' in data &&
+             data.id is string && data.id.size() <= 100 &&
+             (data.projectId is int || data.projectId is float) &&
+             data.projectName is string && data.projectName.size() <= 200 &&
+             (data.plotId is int || data.plotId is float) &&
+             data.plotNumber is string && data.plotNumber.size() <= 50 &&
+             data.customerName is string && data.customerName.size() <= 150 &&
+             data.salesExecutiveName is string && data.salesExecutiveName.size() <= 150 &&
+             data.salesExecutiveEmail is string && data.salesExecutiveEmail.size() <= 150 &&
+             data.salesExecutiveUid is string && data.salesExecutiveUid.size() <= 128 &&
+             data.reason is string && data.reason.size() <= 1000 &&
+             data.duration is string && data.duration.size() <= 50 &&
+             data.status is string && (data.status == 'Pending Approval' || data.status == 'Approved' || data.status == 'Rejected') &&
+             data.createdAt is string &&
+             (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 1000));
+    }
+
+    // Lead validation predicate
+    function isValidLead(data) {
+      return 'leadId' in data && data.leadId is string &&
+             'fullName' in data && data.fullName is string;
+    }
+
+    // Communication Log validation predicate
+    function isValidCommunicationLog(data) {
+      return 'id' in data && data.id is string &&
+             'body' in data && data.body is string;
+    }
+
+    // Customer validation predicate
+    function isValidCustomer(data) {
+      return 'fullName' in data && data.fullName is string &&
+             'mobile' in data && data.mobile is string;
+    }
+
+    // Blog validation predicate
+    function isValidBlog(data) {
+      return 'title' in data && data.title is string && data.title.size() <= 300 &&
+             'description' in data && data.description is string && data.description.size() <= 2000 &&
+             'content' in data && data.content is string && data.content.size() <= 50000 &&
+             'category' in data && data.category is string &&
+             'author' in data && data.author is string &&
+             'status' in data && data.status is string &&
+             'createdAt' in data && data.createdAt is string;
+    }
+
+    // --- MATCH BLOCKS ---
+
+    // 1. Users Collection
+    match /users/{userId} {
+      // Explicitly allow read for owner or admin
+      allow read: if isOwner(userId) || isAdmin();
+      
+       // Allow create for owner or admin
+      allow create: if (isOwner(userId) && isValidUserProfile(incoming()) && (
+        ((isSuperAdminEmailString(request.auth.token.get('email', '').lower()) || isSuperAdminEmailString(incoming().get('email', '').lower())) && incoming().get('role', '') == 'admin' && incoming().get('status', '') == 'Approved' && incoming().get('approved', false) == true) ||
+        (incoming().get('role', '') == 'user' && incoming().get('status', '') == 'Approved' && incoming().get('approved', false) == true)
+      )) || (isAdmin() && isValidUserProfile(incoming()));
+      
+      // Allow update for owner or admin
+      allow update: if (isOwner(userId) && isValidUserProfile(incoming()) && (
+        (isSuperAdminEmailString(request.auth.token.get('email', '').lower()) || isSuperAdminEmailString(incoming().get('email', '').lower())) ||
+        (
+          getRole(incoming()) == 'user' &&
+          getRole(existing()) == 'user'
+        )
+      )) || (isAdmin() && isValidUserProfile(incoming()));
+      
+      // Allow delete for owner or admin
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // 2. Projects Collection
+    match /projects/{projectId} {
+      allow read: if true; // Public listings
+      allow create: if isAdmin() && isValidProject(incoming());
+      allow update: if (isAdmin() || isValidProject(incoming()));
+      allow delete: if isAdmin();
+    }
+
+    // 3. Bookings Collection
+    match /bookings/{bookingId} {
+      allow list, get: if isApprovedOrAdmin();
+      allow create: if isApprovedUser() && isValidBooking(incoming());
+      allow update: if isApprovedUser() && (
+        isManagerOrAdmin() || (
+          existing().get(['customer', 'email'], '') == request.auth.token.get('email', '') && 
+          incoming().diff(existing()).affectedKeys().hasOnly(['status']) && 
+          incoming().get('status', '') == 'Cancelled'
+        )
+      );
+      allow delete: if isApprovedUser() && isAdmin();
+    }
+
+    // 4. HoldRequests Collection
+    match /hold_requests/{requestId} {
+      allow list, get: if isApprovedOrAdmin();
+      allow create: if isApprovedUser() && isValidHoldRequest(incoming()) && incoming().get('status', '') == 'Pending Approval';
+      allow update: if isApprovedUser() && (
+        isManagerOrAdmin() || (
+          existing().get('salesExecutiveUid', '') == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+          incoming().get('status', '') == 'Rejected'
+        )
+      );
+      allow delete: if isApprovedUser() && isAdmin();
+    }
+
+    // 5. Plot Mappings Collection
+    match /plot_mappings/{mappingId} {
+      allow read: if true; // anyone can read coordinates
+      allow write, create, update, delete: if isAdmin();
+    }
+
+    // Blogs Collection
+    match /blogs/{blogId} {
+      allow read: if true; // Public view
+      allow create, update, delete: if isAdmin() && isValidBlog(incoming());
+    }
+
+    // 7. Leads Collection
+    match /leads/{leadId} {
+      allow list, get, create, update, delete: if isAdmin();
+    }
+
+    // 8. Communication Logs Collection
+    match /communication_logs/{logId} {
+      allow list, get, create, update, delete: if isAdmin();
+    }
+
+    // 9. Customers Collection
+    match /customers/{customerId} {
+      allow list, get, create, update, delete: if isAdmin();
+    }
+  }
+}

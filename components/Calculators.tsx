@@ -218,6 +218,118 @@ const InvestmentCalculator = () => {
     );
 };
 
+const RoiCalculator = () => {
+    const [purchasePrice, setPurchasePrice] = useState('2000000');
+    const [holdingPeriod, setHoldingPeriod] = useState('5');
+    const [appreciationRate, setAppreciationRate] = useState('10');
+    const [oneTimeCosts, setOneTimeCosts] = useState('150000'); // e.g. Stamp duty & registry
+    const [annualCosts, setAnnualCosts] = useState('12000'); // e.g. Maintenance & property tax
+    const [result, setResult] = useState<{
+        futureValue: number;
+        totalInvestment: number;
+        totalHoldingCost: number;
+        absoluteReturn: number;
+        roiPercent: number;
+        annualizedReturn: number;
+    } | null>(null);
+
+    const calculateROI = () => {
+        const p = parseFloat(purchasePrice) || 0;
+        const years = parseFloat(holdingPeriod) || 0;
+        const rate = parseFloat(appreciationRate) || 0;
+        const initialCost = parseFloat(oneTimeCosts) || 0;
+        const annualCost = parseFloat(annualCosts) || 0;
+
+        if (p > 0 && years > 0) {
+            // Future Value (FV) using compound annual growth rate
+            const futureValue = p * Math.pow(1 + rate / 100, years);
+            
+            // Total holding cost over the years
+            const totalHoldingCost = annualCost * years;
+            
+            // Total initial investment/outlay
+            const totalInvestment = p + initialCost;
+            
+            // Total costs (including holding costs)
+            const totalExpenses = totalInvestment + totalHoldingCost;
+            
+            // Net Profit / Return
+            const absoluteReturn = futureValue - totalExpenses;
+            
+            // ROI Percent based on total expenses
+            const roiPercent = totalExpenses > 0 ? (absoluteReturn / totalExpenses) * 100 : 0;
+            
+            // Annualized Return (CAGR)
+            const annualizedReturn = totalExpenses > 0 && years > 0 
+                ? (Math.pow(futureValue / totalExpenses, 1 / years) - 1) * 100 
+                : 0;
+
+            setResult({
+                futureValue,
+                totalInvestment,
+                totalHoldingCost,
+                absoluteReturn,
+                roiPercent,
+                annualizedReturn
+            });
+        } else {
+            setResult(null);
+        }
+    };
+
+    return (
+        <CalculatorCard title="Investment ROI Calculator">
+            <div className="space-y-4">
+                <InputField label="Purchase Price (₹)" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} placeholder="e.g., 2000000" />
+                <InputField label="Holding Period (Years)" value={holdingPeriod} onChange={e => setHoldingPeriod(e.target.value)} placeholder="e.g., 5" />
+                <InputField label="Expected Annual Appreciation (%)" value={appreciationRate} onChange={e => setAppreciationRate(e.target.value)} placeholder="e.g., 10" />
+                
+                <div className="grid grid-cols-2 gap-3">
+                    <InputField label="One-time Costs (₹)" value={oneTimeCosts} onChange={e => setOneTimeCosts(e.target.value)} placeholder="e.g., Registry, fees" />
+                    <InputField label="Annual Costs (₹)" value={annualCosts} onChange={e => setAnnualCosts(e.target.value)} placeholder="e.g., Maintenance" />
+                </div>
+
+                <button onClick={calculateROI} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    Calculate Return on Investment
+                </button>
+
+                {result && (
+                    <div className="mt-4 space-y-3 bg-blue-50/70 p-4 rounded-lg border border-blue-100">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-semibold text-gray-600">Total Purchase Cost:</span>
+                            <span className="font-bold text-gray-800">₹ {Math.round(result.totalInvestment).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-semibold text-gray-600">Total Maintenance (over period):</span>
+                            <span className="font-bold text-gray-800">₹ {Math.round(result.totalHoldingCost).toLocaleString('en-IN')}</span>
+                        </div>
+                        <hr className="border-blue-100" />
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-semibold text-gray-600">Est. Future Sale Value:</span>
+                            <span className="font-bold text-gray-800">₹ {Math.round(result.futureValue).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-semibold text-gray-600">Estimated Net Profit:</span>
+                            <span className="font-extrabold text-xl text-blue-800">₹ {Math.round(result.absoluteReturn).toLocaleString('en-IN')}</span>
+                        </div>
+                        <hr className="border-blue-100" />
+                        <div className="flex justify-between items-center text-base">
+                            <span className="font-bold text-gray-800">Total ROI:</span>
+                            <span className={`font-extrabold text-2xl ${result.roiPercent >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {result.roiPercent.toFixed(2)}%
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>Annualized Return (CAGR):</span>
+                            <span className="font-semibold text-gray-700">{result.annualizedReturn.toFixed(2)}% p.a.</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </CalculatorCard>
+    );
+};
+
 
 const Calculators: React.FC = () => {
   const [activeTab, setActiveTab] = useState('emi');
@@ -228,6 +340,8 @@ const Calculators: React.FC = () => {
                 return <MortgageCalculator />;
             case 'investment':
                 return <InvestmentCalculator />;
+            case 'roi':
+                return <RoiCalculator />;
             case 'emi':
             default:
                 return <EMICalculator />;
@@ -239,9 +353,9 @@ const Calculators: React.FC = () => {
         return (
             <button
                 onClick={() => setActiveTab(id)}
-                className={`flex-1 py-3 px-2 text-center font-semibold border-b-4 transition-colors ${
+                className={`flex-1 py-3 px-1 text-center font-semibold border-b-4 transition-colors text-xs sm:text-sm ${
                     isActive
-                        ? 'text-blue-600 border-blue-600'
+                        ? 'text-blue-600 border-blue-600 bg-white'
                         : 'text-gray-500 border-transparent hover:text-gray-800 hover:border-gray-300'
                 }`}
             >
@@ -254,10 +368,11 @@ const Calculators: React.FC = () => {
         <div>
             <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Financial Tools</h1>
             <div className="max-w-md mx-auto">
-                <div className="bg-gray-100 rounded-t-lg flex mb-[-1px]">
+                <div className="bg-gray-100 rounded-t-lg flex flex-wrap mb-[-1px]">
                     <TabButton id="emi" label="EMI" />
                     <TabButton id="mortgage" label="Mortgage" />
-                    <TabButton id="investment" label="Investment" />
+                    <TabButton id="investment" label="Growth" />
+                    <TabButton id="roi" label="Investment ROI" />
                 </div>
                 {renderCalculator()}
             </div>

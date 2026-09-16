@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Project } from '../types';
+import { View, Project, PlotStatus } from '../types';
 import Icon from './common/Icon';
 
 interface DashboardProps {
@@ -8,6 +8,7 @@ interface DashboardProps {
   selectProject: (project: Project) => void;
   savedProjectIds: number[];
   onToggleSave: (projectId: number) => void;
+  isAdmin?: boolean;
 }
 
 const FeatureCard: React.FC<{ title: string; icon: string; view: View; onClick: (view: View) => void }> = ({ title, icon, view, onClick }) => (
@@ -23,7 +24,7 @@ const FeatureCard: React.FC<{ title: string; icon: string; view: View; onClick: 
 );
 
 
-const Dashboard: React.FC<DashboardProps> = ({ projects, navigateTo, selectProject, savedProjectIds, onToggleSave }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projects, navigateTo, selectProject, savedProjectIds, onToggleSave, isAdmin }) => {
   return (
     <div className="space-y-8">
       <div>
@@ -31,11 +32,14 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, navigateTo, selectProje
         <p className="text-gray-500 mt-1">Your trusted partner in real estate investment.</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          <FeatureCard title="Plot Bookings" icon="check" view={View.PLOT_BOOKINGS} onClick={navigateTo} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
           <FeatureCard title="All Projects" icon="projects" view={View.PROJECTS} onClick={navigateTo} />
           <FeatureCard title="Property Insights" icon="insights" view={View.INSIGHTS} onClick={navigateTo} />
           <FeatureCard title="Financial Tools" icon="calculator" view={View.CALCULATORS} onClick={navigateTo} />
+          <FeatureCard title="Plot Bookings" icon="check" view={View.PLOT_BOOKINGS} onClick={navigateTo} />
+          {isAdmin && (
+            <FeatureCard title="Admin Control" icon="lock" view={View.ADMIN_PANEL} onClick={navigateTo} />
+          )}
           <FeatureCard title="Contact Us" icon="contact" view={View.CONTACT} onClick={navigateTo} />
       </div>
 
@@ -68,8 +72,27 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, navigateTo, selectProje
                     {project.location}
                   </p>
                   <div className="mt-4 flex justify-between items-center">
-                      <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">{project.availablePlots} plots available</span>
-                      <button className="text-blue-600 font-semibold text-sm">View Details →</button>
+                    {(() => {
+                      const plotsList = project.plots || project.layout || [];
+                      const availCount = plotsList.length > 0 
+                        ? plotsList.filter(p => p.status === PlotStatus.AVAILABLE || p.status === PlotStatus.RESALE).length
+                        : project.availablePlots;
+
+                      if (availCount > 0) {
+                        return (
+                          <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
+                            🟢 {availCount} Available
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span className="text-xs font-bold text-red-700 bg-red-100 px-3 py-1 rounded-full border border-red-200">
+                            🔴 Sold Out
+                          </span>
+                        );
+                      }
+                    })()}
+                    <button className="text-blue-600 font-semibold text-sm">View Details →</button>
                   </div>
                 </div>
               </div>
@@ -81,8 +104,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, navigateTo, selectProje
        <div className="bg-blue-800 text-white p-6 rounded-lg text-center">
             <h2 className="text-2xl font-bold mb-2">Why Invest With Us?</h2>
             <p className="mb-4">Real estate is more than just property; it's a foundation for your future. We provide expert guidance to help you make secure and profitable investments.</p>
-            <button onClick={() => navigateTo(View.INSIGHTS)} className="bg-white text-blue-800 font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition-colors">
-                Learn More
+            <button onClick={() => navigateTo(View.PROJECTS)} className="bg-white text-blue-800 font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition-colors">
+                Explore Projects
             </button>
         </div>
     </div>
